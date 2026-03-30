@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Presentation Builder Pro - Biju's Tool</title>
+    <style>
+        :root { --primary: #003366; --gold: #d4af37; --bg: #f4f4f4; --danger: #dc3545; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); color: #333; }
+        
+        /* Left Panel: Editor */
+        #editor { width: 45%; padding: 25px; overflow-y: auto; background: white; border-right: 1px solid #ccc; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); margin-bottom: 20px; padding-bottom: 10px; }
+        
+        /* Forms */
+        .slide-form { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; position: relative; transition: 0.2s; border-left: 5px solid var(--primary); }
+        .slide-form:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 12px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #666; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        
+        /* Buttons */
+        .btn { padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: var(--primary); color: white; width: 100%; margin: 10px 0; }
+        .btn-download { background: #28a745; color: white; width: 100%; font-size: 1.1rem; margin-top: 10px; }
+        .btn-load { background: #6c757d; color: white; font-size: 0.9rem; }
+        .btn-del { background: var(--danger); color: white; padding: 5px 10px; position: absolute; top: 15px; right: 15px; font-size: 0.7rem; }
+
+        /* Right Panel: Code Preview */
+        #preview-container { width: 55%; padding: 25px; display: flex; flex-direction: column; background: #f8f9fa; }
+        #code-output { flex-grow: 1; background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; white-space: pre-wrap; overflow-y: auto; font-size: 0.85rem; border: 1px solid #333; }
+        
+        .upload-area { background: #e9ecef; border: 2px dashed #adb5bd; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="editor">
+    <div class="section-header">
+        <h2>Presentation Editor</h2>
+        <div class="btn-load-wrapper">
+            <input type="file" id="fileInput" style="display:none" accept=".html" onchange="loadExistingFile(event)">
+            <button class="btn btn-load" onclick="document.getElementById('fileInput').click()">📁 Load Existing File</button>
+        </div>
+    </div>
+
+    <div class="upload-area">
+        <label>Main Presentation Title</label>
+        <input type="text" id="mainTitle" value="Lessons from St. Mother Teresa" oninput="generate()">
+        <label>Presenter / Subtitle</label>
+        <input type="text" id="presenter" value="Biju & Men's Group" oninput="generate()">
+    </div>
+
+    <div id="slides-list"></div>
+    
+    <button class="btn btn-add" onclick="addSlide()">+ Add New Slide</button>
+    <button class="btn btn-download" onclick="downloadHTML()">💾 Save & Download HTML</button>
+</div>
+
+<div id="preview-container">
+    <h3 style="margin-top:0">Live HTML Source Code</h3>
+    <div id="code-output"></div>
+</div>
+
+<script>
+    let slides = [];
+
+    // Initialize with one slide
+    if(slides.length === 0) {
+        slides.push({ title: "Spiritual Poverty", content: "Loneliness is the greatest hunger.", vidId: "podbbvAYVTg", start: 72, end: 92, btnText: "Play: Loneliness" });
+    }
+
+    function addSlide() {
+        slides.push({ title: "New Slide", content: "", vidId: "", start: 0, end: 0, btnText: "" });
+        renderForms();
+        generate();
+    }
+
+    function removeSlide(i) {
+        if(confirm("Delete this slide?")) {
+            slides.splice(i, 1);
+            renderForms();
+            generate();
+        }
+    }
+
+    function updateSlide(index, field, value) {
+        slides[index][field] = value;
+        generate();
+    }
+
+    function renderForms() {
+        const container = document.getElementById('slides-list');
+        container.innerHTML = '';
+        slides.forEach((s, i) => {
+            container.innerHTML += `
+                <div class="slide-form">
+                    <button class="btn btn-del" onclick="removeSlide(${i})">REMOVE</button>
+                    <strong>SLIDE ${i + 1}</strong>
+                    <label>Heading</label>
+                    <input type="text" value="${s.title}" oninput="updateSlide(${i}, 'title', this.value)">
+                    <label>Bullets (Press Enter for new bullet)</label>
+                    <textarea rows="3" oninput="updateSlide(${i}, 'content', this.value)">${s.content}</textarea>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label>YouTube ID</label>
+                            <input type="text" value="${s.vidId}" placeholder="e.g. podbbvAYVTg" oninput="updateSlide(${i}, 'vidId', this.value)">
+                        </div>
+                        <div>
+                            <label>Button Label</label>
+                            <input type="text" value="${s.btnText}" placeholder="Play Video" oninput="updateSlide(${i}, 'btnText', this.value)">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1"><label>Start (sec)</label><input type="number" value="${s.start}" oninput="updateSlide(${i}, 'start', this.value)"></div>
+                        <div style="flex:1"><label>End (sec)</label><input type="number" value="${s.end}" oninput="updateSlide(${i}, 'end', this.value)"></div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // --- THE NEW "LOAD" LOGIC ---
+    function loadExistingFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const html = e.target.result;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+
+            // Extract Metadata
+            document.getElementById('mainTitle').value = doc.querySelector('h1') ? doc.querySelector('h1').innerText : "Untitled";
+            document.getElementById('presenter').value = doc.querySelector('.slide p') ? doc.querySelector('.slide p').innerText : "";
+
+            // Extract Slides
+            const rawSlides = doc.querySelectorAll('.slide');
+            const newSlides = [];
+
+            // Skip the first slide (Title slide)
+            for(let i = 1; i < rawSlides.length; i++) {
+                const s = rawSlides[i];
+                const title = s.querySelector('h2') ? s.querySelector('h2').innerText : "";
+                
+                // Get Bullets
+                const bullets = Array.from(s.querySelectorAll('li')).map(li => li.innerText).join('\n');
+                
+                // Get Video Data from the button's onclick attribute
+                const btn = s.querySelector('.btn-vid');
+                let vidId = "", start = 0, end = 0, btnText = "";
+                
+                if(btn) {
+                    btnText = btn.innerText.replace('▶ ', '');
+                    const onclick = btn.getAttribute('onclick');
+                    const matches = onclick.match(/'([^']+)',\s*(\d+),\s*(\d+)/);
+                    if(matches) {
+                        vidId = matches[1];
+                        start = matches[2];
+                        end = matches[3];
+                    }
+                }
+
+                newSlides.push({ title, content: bullets, vidId, start, end, btnText });
+            }
+
+            slides = newSlides;
+            renderForms();
+            generate();
+            alert("Presentation loaded successfully!");
+        };
+        reader.readAsText(file);
+    }
+
+    function generate() {
+        const mainTitle = document.getElementById('mainTitle').value;
+        const presenter = document.getElementById('presenter').value;
+        
+        let slideHTML = '';
+        slides.forEach((s) => {
+            const listItems = s.content.split('\n').filter(t => t.trim() !== "").map(item => `<li>${item}</li>`).join('');
+            const vidBtn = s.vidId ? `<button class="btn-vid" onclick="openClip('${s.vidId}', ${s.start}, ${s.end})">▶ ${s.btnText || 'Play Video'}</button>` : '';
+            slideHTML += `
+    <div class="slide">
+        <h2>${s.title}</h2>
+        <ul>${listItems}</ul>
+        ${vidBtn}
+    </div>`;
+        });
+
+        const template = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>${mainTitle}</title>
+    <style>
+        :root { --gold: #d4af37; --bg: #050505; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Georgia', serif; overflow: hidden; }
+        .slide-deck { display: flex; width: ${(slides.length + 1) * 100}%; height: 100vh; transition: transform 0.5s ease; }
+        .slide { width: 100vw; height: 100vh; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; box-sizing: border-box; text-align: center; }
+        h1 { font-size: 3.5rem; color: var(--gold); }
+        h2 { font-size: 2.8rem; border-bottom: 3px solid var(--gold); margin-bottom: 20px; }
+        ul { text-align: left; font-size: 1.8rem; max-width: 800px; line-height: 1.4; }
+        .btn-vid { background: var(--gold); border: none; padding: 20px 40px; font-weight: bold; cursor: pointer; border-radius: 50px; font-size: 1.4rem; margin-top: 20px; transition: 0.2s; }
+        .btn-vid:hover { background: white; transform: scale(1.05); }
+        .nav { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 1000; }
+        .nav button { padding: 10px 20px; background: #222; color: white; border: 1px solid #444; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div class="slide-deck" id="deck">
+    <div class="slide"><h1>${mainTitle}</h1><p>${presenter}</p></div>
+    ${slideHTML}
+</div>
+<div class="nav">
+    <button onclick="change(-1)">PREVIOUS</button>
+    <button onclick="change(1)">NEXT</button>
+</div>
+<script>
+    let cur = 0;
+    const total = ${slides.length + 1};
+    function change(d) {
+        cur = Math.max(0, Math.min(total - 1, cur + d));
+        document.getElementById('deck').style.transform = 'translateX(-' + (cur * 100) + 'vw)';
+    }
+    function openClip(id, start, end) {
+        const url = 'https://www.youtube.com/embed/' + id + '?start=' + start + '&end=' + end + '&autoplay=1&origin=' + window.location.origin;
+        window.open(url, 'yt', 'width=800,height=450');
+    }
+    document.addEventListener('keydown', e => { if(e.key==="ArrowRight") change(1); if(e.key==="ArrowLeft") change(-1); });
+<\/script>
+</body>
+</html>`;
+
+        document.getElementById('code-output').innerText = template;
+    }
+
+    function downloadHTML() {
+        const code = document.getElementById('code-output').innerText;
+        const blob = new Blob([code], { type: 'text/html' });
+        const a = document.createElement('a');
+        const fileName = document.getElementById('mainTitle').value.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName + '.html';
+        a.click();
+    }
+
+    renderForms();
+    generate();
+</script>
+</body>
+</html>
