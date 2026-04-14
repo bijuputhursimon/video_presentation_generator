@@ -2,250 +2,216 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Presentation Builder Pro - Biju's Tool</title>
+    <title>Slide Deck Generator v2</title>
     <style>
-        :root { --primary: #003366; --gold: #d4af37; --bg: #f4f4f4; --danger: #dc3545; }
-        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); color: #333; }
-        
-        /* Left Panel: Editor */
-        #editor { width: 45%; padding: 25px; overflow-y: auto; background: white; border-right: 1px solid #ccc; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
-        .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); margin-bottom: 20px; padding-bottom: 10px; }
-        
-        /* Forms */
-        .slide-form { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; position: relative; transition: 0.2s; border-left: 5px solid var(--primary); }
-        .slide-form:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        label { display: block; margin-top: 12px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #666; }
-        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
-        
-        /* Buttons */
-        .btn { padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; width: 100%; margin: 10px 0; }
-        .btn-download { background: #28a745; color: white; width: 100%; font-size: 1.1rem; margin-top: 10px; }
-        .btn-load { background: #6c757d; color: white; font-size: 0.9rem; }
-        .btn-del { background: var(--danger); color: white; padding: 5px 10px; position: absolute; top: 15px; right: 15px; font-size: 0.7rem; }
-
-        /* Right Panel: Code Preview */
-        #preview-container { width: 55%; padding: 25px; display: flex; flex-direction: column; background: #f8f9fa; }
-        #code-output { flex-grow: 1; background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; white-space: pre-wrap; overflow-y: auto; font-size: 0.85rem; border: 1px solid #333; }
-        
-        .upload-area { background: #e9ecef; border: 2px dashed #adb5bd; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+        :root { --gold: #d4af37; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid #333; }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #333; }
+        .slide-item { background: #252525; border-left: 4px solid var(--gold); padding: 20px; margin-bottom: 20px; border-radius: 4px; position: relative; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+        label { display: block; font-size: 11px; color: var(--gold); text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; background: #121212; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
+        button { cursor: pointer; padding: 10px 18px; border-radius: 6px; border: none; font-weight: bold; transition: opacity 0.2s; }
+        .btn-add { background: #2ecc71; color: white; margin-top: 10px; }
+        .btn-gen { background: var(--gold); color: black; }
+        .btn-del { background: #e74c3c; color: white; position: absolute; top: 10px; right: 10px; padding: 5px 10px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div id="editor">
-    <div class="section-header">
-        <h2>Presentation Editor</h2>
-        <div class="btn-load-wrapper">
-            <input type="file" id="fileInput" style="display:none" accept=".html" onchange="loadExistingFile(event)">
-            <button class="btn btn-load" onclick="document.getElementById('fileInput').click()">📁 Load Existing File</button>
-        </div>
+<div class="container">
+    <h2>Presentation Builder (Multi-Screen)</h2>
+    <div class="toolbar">
+        <button onclick="document.getElementById('fileIn').click()" style="background:#3498db; color:white;">Import JSON</button>
+        <button onclick="exportJSON()" style="background:#555; color:white;">Export JSON</button>
+        <button class="btn-gen" onclick="generateHTML()">Generate Presentation</button>
+        <input type="file" id="fileIn" class="hidden" accept=".json" onchange="importJSON(event)">
     </div>
 
-    <div class="upload-area">
-        <label>Main Presentation Title</label>
-        <input type="text" id="mainTitle" value="Lessons from St. Mother Teresa" oninput="generate()">
-        <label>Presenter / Subtitle</label>
-        <input type="text" id="presenter" value="Biju & Men's Group" oninput="generate()">
-    </div>
-
-    <div id="slides-list"></div>
-    
-    <button class="btn btn-add" onclick="addSlide()">+ Add New Slide</button>
-    <button class="btn btn-download" onclick="downloadHTML()">💾 Save & Download HTML</button>
-</div>
-
-<div id="preview-container">
-    <h3 style="margin-top:0">Live HTML Source Code</h3>
-    <div id="code-output"></div>
+    <div id="slide-container"></div>
+    <button class="btn-add" onclick="addSlide()">+ Add New Slide</button>
 </div>
 
 <script>
     let slides = [];
 
-    // Initialize with one slide
-    if(slides.length === 0) {
-        slides.push({ title: "Spiritual Poverty", content: "Loneliness is the greatest hunger.", vidId: "podbbvAYVTg", start: 72, end: 92, btnText: "Play: Loneliness" });
+    // Utility to convert hh:mm:ss to seconds
+    function hmsToSeconds(hms) {
+        const parts = hms.split(':').map(Number);
+        if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+        if (parts.length === 2) return (parts[0] * 60) + parts[1];
+        return parts[0] || 0;
     }
 
-    function addSlide() {
-        slides.push({ title: "New Slide", content: "", vidId: "", start: 0, end: 0, btnText: "" });
-        renderForms();
-        generate();
-    }
-
-    function removeSlide(i) {
-        if(confirm("Delete this slide?")) {
-            slides.splice(i, 1);
-            renderForms();
-            generate();
-        }
-    }
-
-    function updateSlide(index, field, value) {
-        slides[index][field] = value;
-        generate();
-    }
-
-    function renderForms() {
-        const container = document.getElementById('slides-list');
-        container.innerHTML = '';
-        slides.forEach((s, i) => {
-            container.innerHTML += `
-                <div class="slide-form">
-                    <button class="btn btn-del" onclick="removeSlide(${i})">REMOVE</button>
-                    <strong>SLIDE ${i + 1}</strong>
-                    <label>Heading</label>
-                    <input type="text" value="${s.title}" oninput="updateSlide(${i}, 'title', this.value)">
-                    <label>Bullets (Press Enter for new bullet)</label>
-                    <textarea rows="3" oninput="updateSlide(${i}, 'content', this.value)">${s.content}</textarea>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <div>
-                            <label>YouTube ID</label>
-                            <input type="text" value="${s.vidId}" placeholder="e.g. podbbvAYVTg" oninput="updateSlide(${i}, 'vidId', this.value)">
-                        </div>
-                        <div>
-                            <label>Button Label</label>
-                            <input type="text" value="${s.btnText}" placeholder="Play Video" oninput="updateSlide(${i}, 'btnText', this.value)">
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1"><label>Start (sec)</label><input type="number" value="${s.start}" oninput="updateSlide(${i}, 'start', this.value)"></div>
-                        <div style="flex:1"><label>End (sec)</label><input type="number" value="${s.end}" oninput="updateSlide(${i}, 'end', this.value)"></div>
-                    </div>
-                </div>`;
+    function addSlide(data = {}) {
+        slides.push({
+            eyebrow: data.eyebrow || "Section Header",
+            title: data.title || "New Slide",
+            description: data.description || "",
+            points: Array.isArray(data.points) ? data.points.join('\n') : (data.points || ""),
+            quote: data.quote || "",
+            youtubeId: data.youtubeId || "wQR79fVFSy8",
+            start: data.start || "00:00:00",
+            end: data.end || "00:01:00"
         });
+        render();
     }
 
-    // --- THE NEW "LOAD" LOGIC ---
-    function loadExistingFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    function update(idx, field, val) { slides[idx][field] = val; }
+    function remove(idx) { slides.splice(idx, 1); render(); }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const html = e.target.result;
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-
-            // Extract Metadata
-            document.getElementById('mainTitle').value = doc.querySelector('h1') ? doc.querySelector('h1').innerText : "Untitled";
-            document.getElementById('presenter').value = doc.querySelector('.slide p') ? doc.querySelector('.slide p').innerText : "";
-
-            // Extract Slides
-            const rawSlides = doc.querySelectorAll('.slide');
-            const newSlides = [];
-
-            // Skip the first slide (Title slide)
-            for(let i = 1; i < rawSlides.length; i++) {
-                const s = rawSlides[i];
-                const title = s.querySelector('h2') ? s.querySelector('h2').innerText : "";
-                
-                // Get Bullets
-                const bullets = Array.from(s.querySelectorAll('li')).map(li => li.innerText).join('\n');
-                
-                // Get Video Data from the button's onclick attribute
-                const btn = s.querySelector('.btn-vid');
-                let vidId = "", start = 0, end = 0, btnText = "";
-                
-                if(btn) {
-                    btnText = btn.innerText.replace('▶ ', '');
-                    const onclick = btn.getAttribute('onclick');
-                    const matches = onclick.match(/'([^']+)',\s*(\d+),\s*(\d+)/);
-                    if(matches) {
-                        vidId = matches[1];
-                        start = matches[2];
-                        end = matches[3];
-                    }
-                }
-
-                newSlides.push({ title, content: bullets, vidId, start, end, btnText });
-            }
-
-            slides = newSlides;
-            renderForms();
-            generate();
-            alert("Presentation loaded successfully!");
-        };
-        reader.readAsText(file);
+    function render() {
+        const div = document.getElementById('slide-container');
+        div.innerHTML = slides.map((s, i) => `
+            <div class="slide-item">
+                <button class="btn-del" onclick="remove(${i})">Delete</button>
+                <div class="grid">
+                    <div><label>Eyebrow</label><input onchange="update(${i},'eyebrow',this.value)" value="${s.eyebrow}"></div>
+                    <div><label>Title</label><input onchange="update(${i},'title',this.value)" value="${s.title}"></div>
+                </div>
+                <label style="margin-top:10px">Description</label>
+                <textarea onchange="update(${i},'description',this.value)">${s.description}</textarea>
+                <label>Points (one per line)</label>
+                <textarea onchange="update(${i},'points',this.value)">${s.points}</textarea>
+                <label>Quote</label>
+                <input onchange="update(${i},'quote',this.value)" value="${s.quote}">
+                <div class="grid">
+                    <div><label>YouTube ID</label><input onchange="update(${i},'youtubeId',this.value)" value="${s.youtubeId}"></div>
+                    <div><label>Start (hh:mm:ss)</label><input onchange="update(${i},'start',this.value)" value="${s.start}" placeholder="00:00:00"></div>
+                    <div><label>End (hh:mm:ss)</label><input onchange="update(${i},'end',this.value)" value="${s.end}" placeholder="00:00:00"></div>
+                </div>
+            </div>
+        `).join('');
     }
 
-    function generate() {
-        const mainTitle = document.getElementById('mainTitle').value;
-        const presenter = document.getElementById('presenter').value;
-        
-        let slideHTML = '';
-        slides.forEach((s) => {
-            const listItems = s.content.split('\n').filter(t => t.trim() !== "").map(item => `<li>${item}</li>`).join('');
-            const vidBtn = s.vidId ? `<button class="btn-vid" onclick="openClip('${s.vidId}', ${s.start}, ${s.end})">▶ ${s.btnText || 'Play Video'}</button>` : '';
-            slideHTML += `
-    <div class="slide">
-        <h2>${s.title}</h2>
-        <ul>${listItems}</ul>
-        ${vidBtn}
-    </div>`;
-        });
-
-        const template = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title>${mainTitle}</title>
-    <style>
-        :root { --gold: #d4af37; --bg: #050505; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Georgia', serif; overflow: hidden; }
-        .slide-deck { display: flex; width: ${(slides.length + 1) * 100}%; height: 100vh; transition: transform 0.5s ease; }
-        .slide { width: 100vw; height: 100vh; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; box-sizing: border-box; text-align: center; }
-        h1 { font-size: 3.5rem; color: var(--gold); }
-        h2 { font-size: 2.8rem; border-bottom: 3px solid var(--gold); margin-bottom: 20px; }
-        ul { text-align: left; font-size: 1.8rem; max-width: 800px; line-height: 1.4; }
-        .btn-vid { background: var(--gold); border: none; padding: 20px 40px; font-weight: bold; cursor: pointer; border-radius: 50px; font-size: 1.4rem; margin-top: 20px; transition: 0.2s; }
-        .btn-vid:hover { background: white; transform: scale(1.05); }
-        .nav { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 1000; }
-        .nav button { padding: 10px 20px; background: #222; color: white; border: 1px solid #444; cursor: pointer; border-radius: 5px; }
-    </style>
-</head>
-<body>
-<div class="slide-deck" id="deck">
-    <div class="slide"><h1>${mainTitle}</h1><p>${presenter}</p></div>
-    ${slideHTML}
-</div>
-<div class="nav">
-    <button onclick="change(-1)">PREVIOUS</button>
-    <button onclick="change(1)">NEXT</button>
-</div>
-<script>
-    let cur = 0;
-    const total = ${slides.length + 1};
-    function change(d) {
-        cur = Math.max(0, Math.min(total - 1, cur + d));
-        document.getElementById('deck').style.transform = 'translateX(-' + (cur * 100) + 'vw)';
-    }
-    function openClip(id, start, end) {
-        const url = 'https://www.youtube.com/embed/' + id + '?start=' + start + '&end=' + end + '&autoplay=1&origin=' + window.location.origin;
-        window.open(url, 'yt', 'width=800,height=450');
-    }
-    document.addEventListener('keydown', e => { if(e.key==="ArrowRight") change(1); if(e.key==="ArrowLeft") change(-1); });
-<\/script>
-</body>
-</html>`;
-
-        document.getElementById('code-output').innerText = template;
-    }
-
-    function downloadHTML() {
-        const code = document.getElementById('code-output').innerText;
-        const blob = new Blob([code], { type: 'text/html' });
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(slides, null, 2)], {type: 'application/json'});
         const a = document.createElement('a');
-        const fileName = document.getElementById('mainTitle').value.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         a.href = URL.createObjectURL(blob);
-        a.download = fileName + '.html';
+        a.download = "presentation_data.json";
         a.click();
     }
 
-    renderForms();
-    generate();
+    function importJSON(e) {
+        const reader = new FileReader();
+        reader.onload = (f) => { slides = JSON.parse(f.target.result); render(); };
+        reader.readAsText(e.target.files[0]);
+    }
+
+function generateHTML() {
+    const slidesContent = slides.map((s, i) => {
+        const pList = (Array.isArray(s.points) ? s.points : s.points.split('\n'))
+            .filter(p => p.trim())
+            .map(p => `<li>${p}</li>`)
+            .join('');
+
+        const sTime = hmsToSeconds(s.start);
+        const eTime = hmsToSeconds(s.end);
+        const ytUrl = s.youtubeId ? `https://www.youtube.com/watch?v=${s.youtubeId}&t=${sTime}s` : null;
+
+        // Check if video exists
+        const hasVideo = s.youtubeId && s.youtubeId.trim() !== "";
+
+        return `
+    <div class="slide-screen ${i === 0 ? 'active' : ''}" id="slide-${i}">
+        <div class="slide-content ${!hasVideo ? 'no-video' : ''}">
+            <div class="panel">
+                <div class="eyebrow">${s.eyebrow}</div>
+                <h1>${s.title}</h1>
+                <p>${s.description}</p>
+                <ul>${pList}</ul>
+                ${s.quote ? `<div class="quote">“${s.quote}”</div>` : ''}
+            </div>
+            
+            ${hasVideo ? `
+            <div class="panel">
+                <div class="video-container">
+                    <div class="iframe-wrap">
+                        <iframe src="https://www.youtube.com/embed/${s.youtubeId}?start=${sTime}&end=${eTime}&rel=0" allowfullscreen></iframe>
+                    </div>
+                    <div class="clip-info">
+                        <div class="info-row">
+                            <span class="label">Video Link:</span> 
+                            <a href="${ytUrl}" target="_blank" class="value link">${ytUrl}</a>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Clip Segment:</span> 
+                            <span class="value">${s.start} — ${s.end}</span>
+                        </div>
+                    </div>
+                    <button class="pop-btn" onclick="openPopup('${s.youtubeId}', ${sTime}, ${eTime})">Play in External Window</button>
+                </div>
+            </div>` : ``}
+        </div>
+    </div>`;
+    }).join('');
+
+    // Updated template with a 'no-video' CSS helper
+    const finalDoc = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"><title>Presentation</title>
+    <style>
+        :root{ --gold:#d4af37; --bg:#050b16; --text:#f5f1e8; --line:rgba(212,175,55,0.22); }
+        body, html { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:Georgia, serif; }
+        .slide-screen { display:none; height:100vh; width:100vw; box-sizing:border-box; padding:40px; }
+        .slide-screen.active { display:flex; align-items:center; justify-content:center; }
+        .slide-content { display:grid; grid-template-columns:1fr 1fr; width:1280px; max-width:95%; height:85vh; border:1px solid var(--line); border-radius:24px; overflow:hidden; background:rgba(255,255,255,0.02); }
+        
+        /* NEW: Expand text if no video is present */
+        .slide-content.no-video { grid-template-columns: 1fr; max-width: 800px; }
+        
+        .panel { padding:40px; overflow-y:auto; }
+        .panel + .panel { border-left:1px solid var(--line); background:rgba(0,0,0,0.2); }
+        .eyebrow { color:var(--gold); text-transform:uppercase; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:10px; }
+        h1 { font-size:2.8rem; margin:0 0 20px; color:#fff; }
+        .quote { padding:15px; border-left:4px solid var(--gold); background:rgba(212,175,55,0.1); font-style:italic; margin-top:20px; }
+        .video-container { height:100%; display:flex; flex-direction:column; justify-content:center; gap:15px; }
+        .iframe-wrap { aspect-ratio:16/9; width:100%; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+        iframe { width:100%; height:100%; border:0; }
+        .clip-info { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+        .info-row { margin-bottom: 5px; display: flex; gap: 10px; }
+        .label { color: var(--gold); min-width: 90px; }
+        .value { color: #aaa; word-break: break-all; }
+        .pop-btn { background:var(--gold); border:none; padding:12px; border-radius:30px; font-weight:bold; cursor:pointer; }
+        .nav-controls { position:fixed; bottom:30px; right:40px; display:flex; gap:15px; z-index:100; }
+        .nav-btn { background:rgba(255,255,255,0.1); color:white; border:1px solid var(--line); padding:10px 25px; border-radius:5px; cursor:pointer; }
+        .counter { position:fixed; bottom:35px; left:40px; color:var(--gold); opacity:0.6; }
+    </style>
+</head>
+<body>
+    ${slidesContent}
+    <div class="counter" id="progress">Slide 1 / ${slides.length}</div>
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="changeSlide(-1)">← Previous</button>
+        <button class="nav-btn" onclick="changeSlide(1)">Next →</button>
+    </div>
+    <script>
+        let current = 0;
+        const total = ${slides.length};
+        function changeSlide(dir) {
+            document.getElementById('slide-' + current).classList.remove('active');
+            current = (current + dir + total) % total;
+            document.getElementById('slide-' + current).classList.add('active');
+            document.getElementById('progress').innerText = 'Slide ' + (current + 1) + ' / ' + total;
+        }
+        function openPopup(id, s, e) {
+            window.open('https://www.youtube.com/embed/'+id+'?start='+s+'&end='+e+'&autoplay=1', 'player', 'width=900,height=500');
+        }
+    <\/script>
+</body>
+</html>`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([finalDoc], {type:'text/html'}));
+    link.download = "presentation.html";
+    link.click();
+}
+    // Initial empty slide
+    addSlide();
 </script>
 </body>
 </html>
